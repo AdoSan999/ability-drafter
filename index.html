@@ -135,12 +135,12 @@
             <div>
                 <strong>1. Калибровка сетки (в % экрана)</strong>
                 <div class="controls-grid" style="margin-top:8px;">
-                    <div>Ульты Y: <input type="range" id="ultY" min="10" max="40" step="0.2" value="24.0"></div>
-                    <div>Ульты X: <input type="range" id="ultX" min="30" max="60" step="0.2" value="41.5"></div>
-                    <div>Обычные Y: <input type="range" id="basicY" min="30" max="60" step="0.2" value="42.5"></div>
-                    <div>Левый блок X: <input type="range" id="leftX" min="30" max="60" step="0.2" value="41.0"></div>
-                    <div>Правый блок X: <input type="range" id="rightX" min="40" max="70" step="0.2" value="51.5"></div>
-                    <div>Шаг сетки: <input type="range" id="stepScale" min="0.5" max="1.5" step="0.01" value="0.95"></div>
+                    <div>Ульты Y: <input type="range" id="ultY" min="5" max="30" step="0.2" value="13.2"></div>
+                    <div>Ульты X: <input type="range" id="ultX" min="30" max="60" step="0.2" value="40.5"></div>
+                    <div>Обычные Y: <input type="range" id="basicY" min="20" max="50" step="0.2" value="26.5"></div>
+                    <div>Левый блок X: <input type="range" id="leftX" min="20" max="50" step="0.2" value="34.5"></div>
+                    <div>Правый блок X: <input type="range" id="rightX" min="40" max="70" step="0.2" value="53.0"></div>
+                    <div>Шаг сетки: <input type="range" id="stepScale" min="0.5" max="1.5" step="0.01" value="0.92"></div>
                 </div>
             </div>
 
@@ -150,14 +150,10 @@
             </div>
 
             <div id="combosContainer">
-                <strong>3. Найденные связки (пример логики)</strong>
+                <strong>3. Найденные связки</strong>
                 <div class="combo-card" style="margin-top:8px;">
-                    <div class="combo-title">🔥 Имба / Перефарм</div>
-                    <div class="combo-desc">Chemical Rage + Take Aim + Shadow Dance — неубиваемый керри с огромным ренджом и регеном.</div>
-                </div>
-                <div class="combo-card meme" style="margin-top:8px;">
-                    <div class="combo-title">🤡 Чистый угар</div>
-                    <div class="combo-desc">Black Hole + Nethertoxin + 2 пассивки — ставишь купол и стоишь смотришь, как враги плавятся в луже.</div>
+                    <div class="combo-title">🎯 Статус сканера</div>
+                    <div class="combo-desc">Сетка откалибрована под пирамиду драфта. Проверь по скриншоту, как легли рамки!</div>
                 </div>
             </div>
         </div>
@@ -180,13 +176,13 @@
 
         const slots = [];
 
-        // 1. Ульты: 2 ряда по 6 слотов
-        const ultSize = w * 0.032 * s;
-        const ultGapX = w * 0.038 * s;
-        const ultGapY = h * 0.075 * s;
+        // 1. Ульты: 2 ряда по 6 слотов (Трапеция сверху)
+        const ultSize = w * 0.030 * s;
+        const ultGapX = w * 0.036 * s;
+        const ultGapY = h * 0.065 * s;
         for (let r = 0; r < 2; r++) {
             for (let c = 0; c < 6; c++) {
-                const perspX = (c - 2.5) * r * (w * 0.0008);
+                const perspX = (c - 2.5) * r * (w * 0.0006);
                 slots.push({
                     type: 'ult',
                     x: ultStartX + c * ultGapX + perspX,
@@ -198,15 +194,15 @@
         }
 
         // 2. Обычные скиллы: 2 блока по 6 рядов x 3 колонки
-        const bSize = w * 0.031 * s;
-        const bGapX = w * 0.037 * s;
-        const bGapY = h * 0.070 * s;
+        const bSize = w * 0.029 * s;
+        const bGapX = w * 0.035 * s;
+        const bGapY = h * 0.058 * s;
 
         [leftStartX, rightStartX].forEach((baseX, blockIdx) => {
             for (let r = 0; r < 6; r++) {
                 for (let c = 0; c < 3; c++) {
                     const globalCol = blockIdx === 0 ? (c - 3) : (c + 0.5);
-                    const perspX = globalCol * r * (w * 0.0008);
+                    const perspX = globalCol * r * (w * 0.0007);
                     slots.push({
                         type: 'basic',
                         x: baseX + c * bGapX + perspX,
