@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>AD Draft Scanner & Combo Finder</title>
+    <style>
+        :root {
+            --bg: #110e1b;
+            --card: #1b162b;
+            --accent: #8a2be2;
+            --accent-hover: #a14ef0;
+            --text: #ece8f8;
+            --muted: #988fb3;
+        }
+        body {
+            background: var(--bg);
+            color: var(--text);
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        h1 { margin: 0 0 8px; font-size: 22px; }
+        .subtitle { color: var(--muted); font-size: 14px; margin-bottom: 20px; }
+        .toolbar {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+            justify-content: center;
+            margin-bottom: 20px;
+        }
+        button, label.btn {
+            background: var(--accent);
+            color: white;
+            border: none;
+            padding: 10px 18px;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+        button:hover, label.btn:hover { background: var(--accent-hover); }
+        button.secondary { background: #2b2342; }
+        button.secondary:hover { background: #3a3057; }
+        input[type="file"] { display: none; }
+
+        .workspace {
+            display: grid;
+            grid-template-columns: 1fr 340px;
+            gap: 20px;
+            max-width: 1300px;
+            width: 100%;
+        }
+        @media (max-width: 960px) {
+            .workspace { grid-template-columns: 1fr; }
+        }
+        .canvas-box {
+            background: var(--card);
+            padding: 12px;
+            border-radius: 12px;
+            border: 1px solid #2d2447;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        canvas {
+            max-width: 100%;
+            height: auto;
+            border-radius: 8px;
+            background: #09070f;
+        }
+        .panel {
+            background: var(--card);
+            padding: 16px;
+            border-radius: 12px;
+            border: 1px solid #2d2447;
+            display: flex;
+            flex-direction: column;
+            gap: 14px;
+        }
+        .controls-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+            font-size: 12px;
+            color: var(--muted);
+        }
+        .controls-grid input { width: 100%; accent-color: var(--accent); }
+        .combo-card {
+            background: #241d38;
+            border-left: 4px solid var(--accent);
+            padding: 10px 12px;
+            border-radius: 6px;
+        }
+        .combo-card.meme { border-left-color: #ff4d8d; }
+        .combo-title { font-weight: 700; font-size: 14px; margin-bottom: 4px; }
+        .combo-desc { font-size: 12px; color: var(--muted); }
+        .slots-preview {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 4px;
+            max-height: 160px;
+            overflow-y: auto;
+            padding: 6px;
+            background: #130f1f;
+            border-radius: 6px;
+        }
+        .slots-preview canvas { width: 32px; height: 32px; border-radius: 4px; }
+    </style>
+</head>
+<body>
+
+    <h1>AD Draft Scanner & Combo Finder</h1>
+    <div class="subtitle">Захват экрана драфта или тест по скриншоту • Без серверов и установки</div>
+
+    <div class="toolbar">
+        <label class="btn">
+            📁 Загрузить скриншот драфта
+            <input type="file" id="fileInput" accept="image/*">
+        </label>
+        <button id="captureBtn">🖥️ Захватить окно Доты</button>
+        <button class="secondary" id="toggleGridBtn">📐 Сетка слотов: ВКЛ</button>
+        <button class="secondary" id="pipBtn">🪟 Оверлей (PiP)</button>
+    </div>
+
+    <div class="workspace">
+        <div class="canvas-box">
+            <canvas id="mainCanvas" width="1024" height="576"></canvas>
+        </div>
+
+        <div class="panel">
+            <div>
+                <strong>1. Калибровка сетки (в % экрана)</strong>
+                <div class="controls-grid" style="margin-top:8px;">
+                    <div>Ульты Y: <input type="range" id="ultY" min="10" max="25" step="0.2" value="15.5"></div>
+                    <div>Ульты X: <input type="range" id="ultX" min="30" max="42" step="0.2" value="37.2"></div>
+                    <div>Обычные Y: <input type="range" id="basicY" min="30" max="45" step="0.2" value="36.0"></div>
+                    <div>Левый блок X: <input type="range" id="leftX" min="30" max="42" step="0.2" value="36.8"></div>
+                    <div>Правый блок X: <input type="range" id="rightX" min="48" max="60" step="0.2" value="51.2"></div>
+                    <div>Шаг сетки: <input type="range" id="stepScale" min="0.8" max="1.2" step="0.01" value="1.0"></div>
+                </div>
+            </div>
+
+            <div>
+                <strong>2. Вырезанные слоты (48 скиллов)</strong>
+                <div class="slots-preview" id="slotsPreview"></div>
+            </div>
+
+            <div id="combosContainer">
+                <strong>3. Найденные связки (пример логики)</strong>
+                <div class="combo-card" style="margin-top:8px;">
+                    <div class="combo-title">🔥 Имба / Перефарм</div>
+                    <div class="combo-desc">Chemical Rage + Take Aim + Shadow Dance — неубиваемый керри с огромным ренджом и регеном.</div>
+                </div>
+                <div class="combo-card meme" style="margin-top:8px;">
+                    <div class="combo-title">🤡 Чистый угар</div>
+                    <div class="combo-desc">Black Hole + Nethertoxin + 2 пассивки — ставишь купол и стоишь смотришь, как враги плавятся в луже.</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+<script>
+    const canvas = document.getElementById('mainCanvas');
+    const ctx = canvas.getContext('2d');
+    const slotsPreview = document.getElementById('slotsPreview');
+    let currentImage = null;
+    let showGrid = true;
+
+    // Параметры сетки Ability Draft (в процентах от ширины/высоты 16:9)
+    function getGridCoords(w, h) {
+        const s = parseFloat(document.getElementById('stepScale').value);
+        const ultStartX = (parseFloat(document.getElementById('ultX').value) / 100) * w;
+        const ultStartY = (parseFloat(document.getElementById('ultY').value) / 100) * h;
+        const basicStartY = (parseFloat(document.getElementById('basicY').value) / 100) * h;
+        const leftStartX = (parseFloat(document.getElementById('leftX').value) / 100) * w;
+        const rightStartX = (parseFloat(document.getElementById('rightX').value) / 100) * w;
+
+        const slots = [];
+
+        // 1. Ульты: 2 ряда по 6 слотов
+        const ultSize = w * 0.036 * s;
+        const ultGapX = w * 0.0435 * s;
+        const ultGapY = h * 0.088 * s;
+        for (let r = 0; r < 2; r++) {
+            for (let c = 0; c < 6; c++) {
+                // Небольшая поправка на перспективу трапеции
+                const perspX = (c - 2.5) * r * (w * 0.0012);
+                slots.push({
+                    type: 'ult',
+                    x: ultStartX + c * ultGapX + perspX,
+                    y: ultStartY + r * ultGapY,
+                    w: ultSize,
+                    h: ultSize
+                });
+            }
+        }
+
+        // 2. Обычные скиллы: 2 блока (левый и правый) по 6 рядов x 3 колонки
+        const bSize = w * 0.035 * s;
+        const bGapX = w * 0.042 * s;
+        const bGapY = h * 0.081 * s;
+
+        [leftStartX, rightStartX].forEach((baseX, blockIdx) => {
+            for (let r = 0; r < 6; r++) {
+                for (let c = 0; c < 3; c++) {
+                    const globalCol = blockIdx === 0 ? (c - 3) : (c + 0.5);
+                    const perspX = globalCol * r * (w * 0.0011);
+                    slots.push({
+                        type: 'basic',
+                        x: baseX + c * bGapX + perspX,
+                        y: basicStartY + r * bGapY,
+                        w: bSize,
+                        h: bSize
+                    });
+                }
+            }
+        });
+
+        return slots;
+    }
+
+    function render() {
+        if (!currentImage) return;
+        canvas.width = currentImage.width || currentImage.videoWidth || 1024;
+        canvas.height = currentImage.height || currentImage.videoHeight || 576;
+
+        ctx.drawImage(currentImage, 0, 0, canvas.width, canvas.height);
+
+        const slots = getGridCoords(canvas.width, canvas.height);
+        slotsPreview.innerHTML = '';
+
+        slots.forEach((slot) => {
+            // Вырезаем центральную часть иконки для анализа
+            const mini = document.createElement('canvas');
+            mini.width = 32;
+            mini.height = 32;
+            const mCtx = mini.getContext('2d');
+            mCtx.drawImage(
+                canvas,
+                slot.x + slot.w * 0.15,
+                slot.y + slot.h * 0.15,
+                slot.w * 0.7,
+                slot.h * 0.7,
+                0, 0, 32, 32
+            );
+            slotsPreview.appendChild(mini);
+
+            if (showGrid) {
+                ctx.strokeStyle = slot.type === 'ult' ? '#ff4d8d' : '#00f5d4';
+                ctx.lineWidth = Math.max(2, canvas.width * 0.002);
+                ctx.strokeRect(slot.x, slot.y, slot.w, slot.h);
+            }
+        });
+    }
+
+    // Загрузка файла
+    document.getElementById('fileInput').addEventListener('change', (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+        const img = new Image();
+        img.onload = () => {
+            currentImage = img;
+            render();
+        };
+        img.src = URL.createObjectURL(file);
+    });
+
+    // Захват окна Доты
+    document.getElementById('captureBtn').addEventListener('click', async () => {
+        try {
+            const stream = await navigator.mediaDevices.getDisplayMedia({ video: true });
+            const video = document.createElement('video');
+            video.srcObject = stream;
+            await video.play();
+            currentImage = video;
+            setInterval(render, 1000); // Сканируем раз в секунду
+        } catch (err) {
+            alert('Не удалось захватить экран: ' + err.message);
+        }
+    });
+
+    // Переключение сетки и ползунки
+    document.getElementById('toggleGridBtn').addEventListener('click', (e) => {
+        showGrid = !showGrid;
+        e.target.textContent = `📐 Сетка слотов: ${showGrid ? 'ВКЛ' : 'ВЫКЛ'}`;
+        render();
+    });
+
+    document.querySelectorAll('input[type="range"]').forEach(inp => {
+        inp.addEventListener('input', render);
+    });
+
+    // Режим оверлея Picture-in-Picture (Edge / Chrome)
+    document.getElementById('pipBtn').addEventListener('click', async () => {
+        if (!('documentPictureInPicture' in window)) {
+            alert('Твой браузер не поддерживает Document PiP. Попробуй открыть в Microsoft Edge!');
+            return;
+        }
+        const pipWin = await documentPictureInPicture.requestWindow({ width: 340, height: 260 });
+        pipWin.document.body.style.background = '#110e1b';
+        pipWin.document.body.style.color = '#ece8f8';
+        pipWin.document.body.style.fontFamily = 'sans-serif';
+        pipWin.document.body.style.padding = '12px';
+        pipWin.document.body.innerHTML = document.getElementById('combosContainer').innerHTML;
+    });
+</script>
+</body>
+</html>
