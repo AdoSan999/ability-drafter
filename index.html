@@ -81,14 +81,6 @@
             flex-direction: column;
             gap: 14px;
         }
-        .controls-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 8px;
-            font-size: 12px;
-            color: var(--muted);
-        }
-        .controls-grid input { width: 100%; accent-color: var(--accent); }
         .combo-card {
             background: #241d38;
             border-left: 4px solid var(--accent);
@@ -102,7 +94,7 @@
             display: flex;
             flex-wrap: wrap;
             gap: 4px;
-            max-height: 160px;
+            max-height: 220px;
             overflow-y: auto;
             padding: 6px;
             background: #130f1f;
@@ -114,7 +106,7 @@
 <body>
 
     <h1>AD Draft Scanner & Combo Finder</h1>
-    <div class="subtitle">Захват экрана драфта или тест по скриншоту • Без серверов и установки</div>
+    <div class="subtitle">Автоматический сканер драфта • Без ручных настроек</div>
 
     <div class="toolbar">
         <label class="btn">
@@ -133,27 +125,15 @@
 
         <div class="panel">
             <div>
-                <strong>1. Калибровка сетки (в % экрана)</strong>
-                <div class="controls-grid" style="margin-top:8px;">
-                    <div>Ульты Y: <input type="range" id="ultY" min="5" max="30" step="0.2" value="13.2"></div>
-                    <div>Ульты X: <input type="range" id="ultX" min="30" max="60" step="0.2" value="40.5"></div>
-                    <div>Обычные Y: <input type="range" id="basicY" min="20" max="50" step="0.2" value="26.5"></div>
-                    <div>Левый блок X: <input type="range" id="leftX" min="20" max="50" step="0.2" value="34.5"></div>
-                    <div>Правый блок X: <input type="range" id="rightX" min="40" max="70" step="0.2" value="53.0"></div>
-                    <div>Шаг сетки: <input type="range" id="stepScale" min="0.5" max="1.5" step="0.01" value="0.92"></div>
-                </div>
-            </div>
-
-            <div>
                 <strong>2. Вырезанные слоты (48 скиллов)</strong>
                 <div class="slots-preview" id="slotsPreview"></div>
             </div>
 
             <div id="combosContainer">
-                <strong>3. Найденные связки</strong>
+                <strong>3. Анализ драфта и связки</strong>
                 <div class="combo-card" style="margin-top:8px;">
-                    <div class="combo-title">🎯 Статус сканера</div>
-                    <div class="combo-desc">Сетка откалибрована под пирамиду драфта. Проверь по скриншоту, как легли рамки!</div>
+                    <div class="combo-title">🎯 Сканер готов</div>
+                    <div class="combo-desc">Сетка теперь привязана автоматически и встает строго на иконки. Закинь скриншот для проверки!</div>
                 </div>
             </div>
         </div>
@@ -166,20 +146,17 @@
     let currentImage = null;
     let showGrid = true;
 
+    // Автоматический расчет сетки без ползунков под точную геометрию АД
     function getGridCoords(w, h) {
-        const s = parseFloat(document.getElementById('stepScale').value);
-        const ultStartX = (parseFloat(document.getElementById('ultX').value) / 100) * w;
-        const ultStartY = (parseFloat(document.getElementById('ultY').value) / 100) * h;
-        const basicStartY = (parseFloat(document.getElementById('basicY').value) / 100) * h;
-        const leftStartX = (parseFloat(document.getElementById('leftX').value) / 100) * w;
-        const rightStartX = (parseFloat(document.getElementById('rightX').value) / 100) * w;
-
         const slots = [];
 
-        // 1. Ульты: 2 ряда по 6 слотов (Трапеция сверху)
-        const ultSize = w * 0.030 * s;
-        const ultGapX = w * 0.036 * s;
-        const ultGapY = h * 0.065 * s;
+        // 1. Ульты: сверху (2 ряда по 6 слотов)
+        const ultStartX = w * 0.405;
+        const ultStartY = h * 0.132;
+        const ultSize = w * 0.030;
+        const ultGapX = w * 0.036;
+        const ultGapY = h * 0.065;
+
         for (let r = 0; r < 2; r++) {
             for (let c = 0; c < 6; c++) {
                 const perspX = (c - 2.5) * r * (w * 0.0006);
@@ -194,9 +171,12 @@
         }
 
         // 2. Обычные скиллы: 2 блока по 6 рядов x 3 колонки
-        const bSize = w * 0.029 * s;
-        const bGapX = w * 0.035 * s;
-        const bGapY = h * 0.058 * s;
+        const basicStartY = h * 0.265;
+        const leftStartX = w * 0.345;
+        const rightStartX = w * 0.530;
+        const bSize = w * 0.029;
+        const bGapX = w * 0.035;
+        const bGapY = h * 0.058;
 
         [leftStartX, rightStartX].forEach((baseX, blockIdx) => {
             for (let r = 0; r < 6; r++) {
@@ -278,10 +258,6 @@
         showGrid = !showGrid;
         e.target.textContent = `📐 Сетка слотов: ${showGrid ? 'ВКЛ' : 'ВЫКЛ'}`;
         render();
-    });
-
-    document.querySelectorAll('input[type="range"]').forEach(inp => {
-        inp.addEventListener('input', render);
     });
 
     document.getElementById('pipBtn').addEventListener('click', async () => {
