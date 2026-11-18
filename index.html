@@ -135,12 +135,12 @@
             <div>
                 <strong>1. Калибровка сетки (в % экрана)</strong>
                 <div class="controls-grid" style="margin-top:8px;">
-                    <div>Ульты Y: <input type="range" id="ultY" min="10" max="25" step="0.2" value="15.5"></div>
-                    <div>Ульты X: <input type="range" id="ultX" min="30" max="42" step="0.2" value="37.2"></div>
-                    <div>Обычные Y: <input type="range" id="basicY" min="30" max="45" step="0.2" value="36.0"></div>
-                    <div>Левый блок X: <input type="range" id="leftX" min="30" max="42" step="0.2" value="36.8"></div>
-                    <div>Правый блок X: <input type="range" id="rightX" min="48" max="60" step="0.2" value="51.2"></div>
-                    <div>Шаг сетки: <input type="range" id="stepScale" min="0.8" max="1.2" step="0.01" value="1.0"></div>
+                    <div>Ульты Y: <input type="range" id="ultY" min="10" max="40" step="0.2" value="24.0"></div>
+                    <div>Ульты X: <input type="range" id="ultX" min="30" max="60" step="0.2" value="41.5"></div>
+                    <div>Обычные Y: <input type="range" id="basicY" min="30" max="60" step="0.2" value="42.5"></div>
+                    <div>Левый блок X: <input type="range" id="leftX" min="30" max="60" step="0.2" value="41.0"></div>
+                    <div>Правый блок X: <input type="range" id="rightX" min="40" max="70" step="0.2" value="51.5"></div>
+                    <div>Шаг сетки: <input type="range" id="stepScale" min="0.5" max="1.5" step="0.01" value="0.95"></div>
                 </div>
             </div>
 
@@ -170,7 +170,6 @@
     let currentImage = null;
     let showGrid = true;
 
-    // Параметры сетки Ability Draft (в процентах от ширины/высоты 16:9)
     function getGridCoords(w, h) {
         const s = parseFloat(document.getElementById('stepScale').value);
         const ultStartX = (parseFloat(document.getElementById('ultX').value) / 100) * w;
@@ -182,13 +181,12 @@
         const slots = [];
 
         // 1. Ульты: 2 ряда по 6 слотов
-        const ultSize = w * 0.036 * s;
-        const ultGapX = w * 0.0435 * s;
-        const ultGapY = h * 0.088 * s;
+        const ultSize = w * 0.032 * s;
+        const ultGapX = w * 0.038 * s;
+        const ultGapY = h * 0.075 * s;
         for (let r = 0; r < 2; r++) {
             for (let c = 0; c < 6; c++) {
-                // Небольшая поправка на перспективу трапеции
-                const perspX = (c - 2.5) * r * (w * 0.0012);
+                const perspX = (c - 2.5) * r * (w * 0.0008);
                 slots.push({
                     type: 'ult',
                     x: ultStartX + c * ultGapX + perspX,
@@ -199,16 +197,16 @@
             }
         }
 
-        // 2. Обычные скиллы: 2 блока (левый и правый) по 6 рядов x 3 колонки
-        const bSize = w * 0.035 * s;
-        const bGapX = w * 0.042 * s;
-        const bGapY = h * 0.081 * s;
+        // 2. Обычные скиллы: 2 блока по 6 рядов x 3 колонки
+        const bSize = w * 0.031 * s;
+        const bGapX = w * 0.037 * s;
+        const bGapY = h * 0.070 * s;
 
         [leftStartX, rightStartX].forEach((baseX, blockIdx) => {
             for (let r = 0; r < 6; r++) {
                 for (let c = 0; c < 3; c++) {
                     const globalCol = blockIdx === 0 ? (c - 3) : (c + 0.5);
-                    const perspX = globalCol * r * (w * 0.0011);
+                    const perspX = globalCol * r * (w * 0.0008);
                     slots.push({
                         type: 'basic',
                         x: baseX + c * bGapX + perspX,
@@ -234,7 +232,6 @@
         slotsPreview.innerHTML = '';
 
         slots.forEach((slot) => {
-            // Вырезаем центральную часть иконки для анализа
             const mini = document.createElement('canvas');
             mini.width = 32;
             mini.height = 32;
@@ -257,7 +254,6 @@
         });
     }
 
-    // Загрузка файла
     document.getElementById('fileInput').addEventListener('change', (e) => {
         const file = e.target.files[0];
         if (!file) return;
@@ -269,7 +265,6 @@
         img.src = URL.createObjectURL(file);
     });
 
-    // Захват окна Доты
     document.getElementById('captureBtn').addEventListener('click', async () => {
         try {
             const stream = await navigator.mediaDevices.getDisplayMedia({ video: true });
@@ -277,13 +272,12 @@
             video.srcObject = stream;
             await video.play();
             currentImage = video;
-            setInterval(render, 1000); // Сканируем раз в секунду
+            setInterval(render, 1000);
         } catch (err) {
             alert('Не удалось захватить экран: ' + err.message);
         }
     });
 
-    // Переключение сетки и ползунки
     document.getElementById('toggleGridBtn').addEventListener('click', (e) => {
         showGrid = !showGrid;
         e.target.textContent = `📐 Сетка слотов: ${showGrid ? 'ВКЛ' : 'ВЫКЛ'}`;
@@ -294,7 +288,6 @@
         inp.addEventListener('input', render);
     });
 
-    // Режим оверлея Picture-in-Picture (Edge / Chrome)
     document.getElementById('pipBtn').addEventListener('click', async () => {
         if (!('documentPictureInPicture' in window)) {
             alert('Твой браузер не поддерживает Document PiP. Попробуй открыть в Microsoft Edge!');
